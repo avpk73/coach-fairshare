@@ -100,7 +100,8 @@ with tab2:
 
     player_input = st.text_area(
         "Enter Player Names (one per line)",
-        "Karthika\nDisha\nShree\nYash\nAbhvadya"
+        "Karthika\nDisha\nShree\nYash\nAbhvadya",
+        key="player_name_input"  # Persistent key for text area
     )
 
     player_names = [p.strip() for p in player_input.split("\n") if p.strip()]
@@ -113,49 +114,40 @@ with tab2:
         st.error("Duplicate player names detected")
         st.stop()
 
-    # --- SESSION STATE (FIX) ---
-    '''
+    # --- SESSION STATE ENGINE ---
+    # 1. Initialize if it doesn't exist
     if "attendance" not in st.session_state:
         st.session_state["attendance"] = pd.DataFrame(
             False, index=player_names, columns=city_names)
-    '''
-    if "attendance" not in st.session_state:
-        st.session_state["attendance"] = pd.DataFrame(
-            False, index=player_names, columns=city_names)
-    else:
-        existing = st.session_state["attendance"]
 
-        # Only rebuild if structure changed
-        if list(existing.index) != player_names or list(existing.columns) != city_names:
-            st.session_state["attendance"] = existing.reindex(
-                index=player_names,
-                columns=city_names,
-                fill_value=False
-            )
-
-    # Rebuild if structure changes
+    # 2. Sync Structure: If players or cities change in Tab 1, reindex without losing data
+    # We do this every rerun to ensure the table is always ready
     st.session_state["attendance"] = st.session_state["attendance"].reindex(
         index=player_names, columns=city_names, fill_value=False
     )
 
+    st.write("Check the boxes for the cities each player attended:")
+
+    # 3. THE FIX: Assign a 'key' and use session_state directly
+    # The 'key' is what prevents the double-click/flicker bug.
     edited_attendance = st.data_editor(
         st.session_state["attendance"],
-        use_container_width=True
+        use_container_width=True,
+        key="main_attendance_editor"  # <--- THIS IS THE CRITICAL LINE
     )
 
-    # Save back
+    # 4. Save the results back to session state so Tab 3 can see them
     st.session_state["attendance"] = edited_attendance
 
-    # --- MOBILE FIX ---
-    edited_attendance = edited_attendance[city_names]
+    # --- MOBILE & MATH FIX ---
+    # Ensure that even if the user clicked headers to sort, the math uses the trip order
+    final_attendance = edited_attendance[city_names]
 
     st.subheader("📍 Travel Map")
-
-    visual_df = edited_attendance.copy().astype(str).replace({
+    visual_df = final_attendance.copy().astype(str).replace({
         "True": "✅",
         "False": "—"
     })
-
     st.dataframe(visual_df, use_container_width=True)
 
 # =========================
