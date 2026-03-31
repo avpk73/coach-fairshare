@@ -110,50 +110,44 @@ with tab2:
         st.warning("⚠️ Enter player names to continue")
         st.stop()
 
-    # --- THE SYNC ENGINE (FIXED) ---
-    # We only modify the dataframe if the 'Structure' (names/columns) actually changed.
-
-    # 1. Initialize session state if missing
-    if "attendance" not in st.session_state:
-        st.session_state["attendance"] = pd.DataFrame(
+    # --- 1. INITIALIZE MASTER DATA ---
+    # We create a 'template' dataframe in session state if it doesn't exist
+    if "master_df" not in st.session_state:
+        st.session_state["master_df"] = pd.DataFrame(
             False, index=player_names, columns=city_names)
-        st.session_state["last_player_list"] = player_names
-        st.session_state["last_city_list"] = city_names
 
-    # 2. Check if we need to Sync (Only if names/cities were added or removed)
-    structure_changed = (player_names != st.session_state.get("last_player_list") or
-                         city_names != st.session_state.get("last_city_list"))
+    # --- 2. SYNC STRUCTURE (Only when names or cities change) ---
+    # We compare current lists to the existing dataframe's index/columns
+    existing_players = list(st.session_state["master_df"].index)
+    existing_cities = list(st.session_state["master_df"].columns)
 
-    if structure_changed:
-        # Use reindex to safely add/remove rows and columns without wiping existing checkmarks
-        st.session_state["attendance"] = st.session_state["attendance"].reindex(
+    if player_names != existing_players or city_names != existing_cities:
+        # Structure changed, so we reindex
+        st.session_state["master_df"] = st.session_state["master_df"].reindex(
             index=player_names, columns=city_names, fill_value=False
         )
-        # Update metadata trackers
-        st.session_state["last_player_list"] = player_names
-        st.session_state["last_city_list"] = city_names
 
     st.write("Check the boxes for the cities each player attended:")
 
-    # 3. THE DATA EDITOR (STABLE)
-    # We pass the session state dataframe DIRECTLY.
-    # Because we aren't re-assigning it above unless a name changed, the click will 'stick'.
-    edited_attendance = st.data_editor(
-        st.session_state["attendance"],
+    # --- 3. THE DATA EDITOR (CRITICAL FIX) ---
+    # We use 'master_df' as the seed, but 'attendance_editor' as the KEY.
+    # We DO NOT assign this to a variable (no 'edited_attendance = ...')
+    st.data_editor(
+        st.session_state["master_df"],
         use_container_width=True,
-        key="stable_attendance_editor"  # Keep this key permanent
+        key="attendance_editor"  # This key now OWN the edited data
     )
 
-    # 4. Save the checkmarks back to session state for Tab 3
-    st.session_state["attendance"] = edited_attendance
-
-    # --- VISUALS ---
-    # Ensure correct order for the map and calculations
-    final_attendance = edited_attendance[city_names]
+    # --- 4. DATA RETRIEVAL ---
+    # Whenever we need the data (for the map or the math in Tab 3),
+    # we pull it directly from the editor's state.
+    final_attendance = st.session_state["attendance_editor"]
 
     st.subheader("📍 Travel Map")
-    visual_df = final_attendance.astype(
-        str).replace({"True": "✅", "False": "—"})
+    visual_df = final_attendance[city_names].astype(str).replace({
+        "True": "✅",
+        "False": "—"
+    })
     st.dataframe(visual_df, use_container_width=True)
 
 
