@@ -90,53 +90,6 @@ div[data-testid="stTabs"] div[role="tablist"] {
 st.title("🚌 Coach Travel Fair-Share Calculator")
 st.caption("Strategic Cost Allocation Engine | Version v27 (UX Enhanced)")
 
-# =========================
-# 🧭 STEP PROGRESS BAR
-# =========================
-st.markdown("""
-<style>
-.step-container {
-    display: flex;
-    gap: 12px;
-    margin: 20px 0;
-}
-
-.step-box {
-    flex: 1;
-    padding: 14px;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-    border: 1px solid rgba(255,255,255,0.1);
-    transition: all 0.2s ease;
-}
-
-/* Step States */
-.step-active {
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-    color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.step-done {
-    background: #1e2a38;
-    color: #8bc34a;
-}
-
-.step-pending {
-    background: #111827;
-    color: #888;
-}
-</style>
-
-<div class="step-container">
-    <div class="step-box step-active">📊 Step 1<br>Costs</div>
-    <div class="step-box step-pending">👥 Step 2<br>Attendance</div>
-    <div class="step-box step-pending">💰 Step 3<br>Settlement</div>
-</div>
-""", unsafe_allow_html=True)
-
 
 # --- CONCEPT EXPLAINER ---
 with st.expander("📖 Logic Overview & Concepts"):
@@ -471,245 +424,245 @@ with tab3:
                     cities), "Union Size": len(block_unions[b_id])})
             st.table(pd.DataFrame(block_info))
 
+with tab4:
+    st.markdown("""
+    # 📘 User Guide
 
-st.markdown("""
-# 📘 User Guide
+    ---
 
----
+    ## 🧭 Navigation (Start Here)
 
-## 🧭 Navigation (Start Here)
+    This app has **4 tabs at the top**:
 
-This app has **4 tabs at the top**:
+    👉 📊 Costs & Route  
+    👉 👥 Attendance  
+    👉 💰 Final Settlement  
+    👉 📘 Guide  
 
-👉 📊 Costs & Route  
-👉 👥 Attendance  
-👉 💰 Final Settlement  
-👉 📘 Guide  
+    ⚠️ Always use them **left → right**
 
-⚠️ Always use them **left → right**
+    ---
 
----
+    # 🔵 TAB 1: Costs & Route
 
-# 🔵 TAB 1: Costs & Route
+    This is where you define the **trip structure**
 
-This is where you define the **trip structure**
+    ---
 
----
+    ## 🧾 How to Fill This Section
 
-## 🧾 How to Fill This Section
+    ### 🔢 Number of Cities
+    - Use the input box to select how many cities
+    - The app will automatically create input fields
 
-### 🔢 Number of Cities
-- Use the input box to select how many cities
-- The app will automatically create input fields
+    👉 Example:
+    - 3 → Delhi, Dehradun, Raipur
 
-👉 Example:
-- 3 → Delhi, Dehradun, Raipur
+    ---
 
----
+    ### 🏙️ City Name
+    - You can edit names directly
+    - Click inside the box and type
 
-### 🏙️ City Name
-- You can edit names directly
-- Click inside the box and type
+    ---
 
----
+    ### 💰 Cost Fields
 
-### 💰 Cost Fields
+    For each city:
 
-For each city:
+    - **Outbound (Base → City)**  
+    Cost to reach the city  
 
-- **Outbound (Base → City)**  
-  Cost to reach the city  
+    - **Return (City → Base)**  
+    Cost to return  
 
-- **Return (City → Base)**  
-  Cost to return  
+    - **Transit (City → City)**  
+    Cost from previous city  
 
-- **Transit (City → City)**  
-  Cost from previous city  
+    ---
 
----
+    ### ⚠️ Important Rule
 
-### ⚠️ Important Rule
+    - If **Transit = 0** → same block  
+    - If **Transit > 0** → new block  
 
-- If **Transit = 0** → same block  
-- If **Transit > 0** → new block  
+    ---
 
----
+    ## ⚙️ Strategy Selection
 
-## ⚙️ Strategy Selection
+    Choose how extra cost (loss) is shared:
 
-Choose how extra cost (loss) is shared:
+    - **Current Participants**
+    → Shared by all players  
 
-- **Current Participants**
-  → Shared by all players  
+    - **Traveling Players Alone (Bridgers)**
+    → Only players continuing travel pay  
 
-- **Traveling Players Alone (Bridgers)**
-  → Only players continuing travel pay  
+    ---
 
----
+    👉 After filling, go to **👥 Attendance tab**
 
-👉 After filling, go to **👥 Attendance tab**
+    ---
 
----
+    # 🟢 TAB 2: Attendance
 
-# 🟢 TAB 2: Attendance
+    This is where you define **who traveled where**
 
-This is where you define **who traveled where**
+    ---
 
----
+    ## 👥 How to Add Players
 
-## 👥 How to Add Players
+    - Type player names in the text box  
+    - One name per line  
 
-- Type player names in the text box  
-- One name per line  
+    👉 Example:
+    Karthika  
+    Yash  
+    Shree  
 
-👉 Example:
-Karthika  
-Yash  
-Shree  
+    ---
 
----
+    ## ❌ How to Remove Players
 
-## ❌ How to Remove Players
+    - Delete the name from the list  
+    - The table will automatically update  
 
-- Delete the name from the list  
-- The table will automatically update  
+    ---
 
----
+    ## ➕ How to Add More Players
 
-## ➕ How to Add More Players
+    - Just add a new line in the text box  
+    - Table updates automatically  
 
-- Just add a new line in the text box  
-- Table updates automatically  
+    ---
 
----
+    ## ✅ How to Mark Attendance
 
-## ✅ How to Mark Attendance
+    - Use the table (checkbox grid)
+    - Tick the cities each player attended  
 
-- Use the table (checkbox grid)
-- Tick the cities each player attended  
+    ---
 
----
+    ## 📊 What You See
 
-## 📊 What You See
+    ### 📍 Travel Map
+    - ✅ = attended  
+    - — = not attended  
 
-### 📍 Travel Map
-- ✅ = attended  
-- — = not attended  
+    ---
 
----
+    ### 🧭 Player Journey Map
+    - 🟢 = present  
+    - ⚪ = absent  
+    - ➡️ = movement  
 
-### 🧭 Player Journey Map
-- 🟢 = present  
-- ⚪ = absent  
-- ➡️ = movement  
+    👉 Helps visualize travel flow  
 
-👉 Helps visualize travel flow  
+    ---
 
----
+    ### 🔗 Bridging Players
+    - Players who travel across cities  
+    - Important for loss calculation  
 
-### 🔗 Bridging Players
-- Players who travel across cities  
-- Important for loss calculation  
+    ---
 
----
+    ## ⚠️ Validation Rules
 
-## ⚠️ Validation Rules
+    - Every city must have **at least one player**
+    - Every player should have **at least one city**
 
-- Every city must have **at least one player**
-- Every player should have **at least one city**
+    ---
 
----
+    👉 After filling, go to **💰 Final Settlement**
 
-👉 After filling, go to **💰 Final Settlement**
+    ---
 
----
+    # 🔴 TAB 3: Final Settlement
 
-# 🔴 TAB 3: Final Settlement
+    ---
 
----
+    ## ▶️ How to Generate Results
 
-## ▶️ How to Generate Results
+    Click:
 
-Click:
+    👉 **🚀 Generate Settlement Report**
 
-👉 **🚀 Generate Settlement Report**
+    ---
 
----
+    ## 📊 What You Get
 
-## 📊 What You Get
+    ### Summary
+    - Total Collected  
+    - Actual Cost  
+    - Difference  
 
-### Summary
-- Total Collected  
-- Actual Cost  
-- Difference  
+    ---
 
----
+    ### ✅ Balance Check
+    - ✔️ Perfect → all good  
+    - ⚠️ Mismatch → check inputs  
 
-### ✅ Balance Check
-- ✔️ Perfect → all good  
-- ⚠️ Mismatch → check inputs  
+    ---
 
----
+    ### 📋 Billing Breakdown
+    - Final amount per player  
 
-### 📋 Billing Breakdown
-- Final amount per player  
+    ---
 
----
+    ### 💡 Insights
+    - Highest payer  
+    - Lowest payer  
 
-### 💡 Insights
-- Highest payer  
-- Lowest payer  
+    ---
 
----
+    ### ⚖️ Savings & Loss Log
+    - 🟢 Saving  
+    - 🔴 Loss  
 
-### ⚖️ Savings & Loss Log
-- 🟢 Saving  
-- 🔴 Loss  
+    ---
 
----
+    ### 🧱 Block Structure
+    - Shows grouping of cities  
 
-### 🧱 Block Structure
-- Shows grouping of cities  
+    ---
 
----
+    ## 📥 Download
 
-## 📥 Download
+    - Click **Download Excel**
+    - Save or share results  
 
-- Click **Download Excel**
-- Save or share results  
+    ---
 
----
+    # 📘 TAB 4: Guide
 
-# 📘 TAB 4: Guide
+    You are here 🙂
 
-You are here 🙂
+    ---
 
----
+    # 🔁 Quick Flow
 
-# 🔁 Quick Flow
+    1. Enter cities & costs  
+    2. Add players & mark attendance  
+    3. Generate settlement  
 
-1. Enter cities & costs  
-2. Add players & mark attendance  
-3. Generate settlement  
+    ---
 
----
+    # 🚨 Common Mistakes
 
-# 🚨 Common Mistakes
+    - Leaving a city with no players  
+    - Forgetting to mark attendance  
+    - Entering wrong transit values  
 
-- Leaving a city with no players  
-- Forgetting to mark attendance  
-- Entering wrong transit values  
+    ---
 
----
+    # 💡 Tips
 
-# 💡 Tips
+    - Use Journey Map to verify player paths  
+    - Check Bridging Players before finalizing  
+    - Ensure Difference = ₹0  
+    - Download Excel for records  
 
-- Use Journey Map to verify player paths  
-- Check Bridging Players before finalizing  
-- Ensure Difference = ₹0  
-- Download Excel for records  
-
-""")
+    """)
 
 # --- FOOTER ---
 st.markdown("---")
