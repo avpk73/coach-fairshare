@@ -40,6 +40,53 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<style>
+
+/* Tabs container */
+div[data-testid="stTabs"] {
+    margin-top: 10px;
+}
+
+/* Each tab */
+button[data-baseweb="tab"] {
+    background-color: #111827 !important;
+    color: #bbb !important;
+    border-radius: 10px !important;
+    padding: 10px 16px !important;
+    margin-right: 6px !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease;
+}
+
+/* Hover effect */
+button[data-baseweb="tab"]:hover {
+    background-color: #1f2937 !important;
+    color: #fff !important;
+}
+
+/* Active tab */
+button[aria-selected="true"] {
+    background: linear-gradient(135deg, #4facfe, #00f2fe) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Make tabs scrollable on mobile */
+div[data-testid="stTabs"] > div {
+    overflow-x: auto;
+}
+
+/* Remove ugly underline */
+div[data-testid="stTabs"] div[role="tablist"] {
+    border-bottom: none !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🚌 Coach Travel Fair-Share Calculator")
 st.caption("Strategic Cost Allocation Engine | Version v27 (UX Enhanced)")
 
@@ -47,18 +94,49 @@ st.caption("Strategic Cost Allocation Engine | Version v27 (UX Enhanced)")
 # 🧭 STEP PROGRESS BAR
 # =========================
 st.markdown("""
-<div style="display:flex; gap:10px; margin-bottom:15px;">
-    <div style="flex:1; padding:10px; border-radius:8px; background:#d1ecf1; text-align:center;">
-        📊 Step 1<br><b>Costs</b>
-    </div>
-    <div style="flex:1; padding:10px; border-radius:8px; background:#fff3cd; text-align:center;">
-        👥 Step 2<br><b>Attendance</b>
-    </div>
-    <div style="flex:1; padding:10px; border-radius:8px; background:#f8d7da; text-align:center;">
-        💰 Step 3<br><b>Settlement</b>
-    </div>
+<style>
+.step-container {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.step-box {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.2s ease;
+}
+
+/* Step States */
+.step-active {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.step-done {
+    background: #1e2a38;
+    color: #8bc34a;
+}
+
+.step-pending {
+    background: #111827;
+    color: #888;
+}
+</style>
+
+<div class="step-container">
+    <div class="step-box step-active">📊 Step 1<br>Costs</div>
+    <div class="step-box step-pending">👥 Step 2<br>Attendance</div>
+    <div class="step-box step-pending">💰 Step 3<br>Settlement</div>
 </div>
 """, unsafe_allow_html=True)
+
 
 # --- CONCEPT EXPLAINER ---
 with st.expander("📖 Logic Overview & Concepts"):
