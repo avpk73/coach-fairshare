@@ -43,6 +43,23 @@ st.markdown("""
 st.title("🚌 Coach Travel Fair-Share Calculator")
 st.caption("Strategic Cost Allocation Engine | Version v27 (UX Enhanced)")
 
+# =========================
+# 🧭 STEP PROGRESS BAR
+# =========================
+st.markdown("""
+<div style="display:flex; gap:10px; margin-bottom:15px;">
+    <div style="flex:1; padding:10px; border-radius:8px; background:#d1ecf1; text-align:center;">
+        📊 Step 1<br><b>Costs</b>
+    </div>
+    <div style="flex:1; padding:10px; border-radius:8px; background:#fff3cd; text-align:center;">
+        👥 Step 2<br><b>Attendance</b>
+    </div>
+    <div style="flex:1; padding:10px; border-radius:8px; background:#f8d7da; text-align:center;">
+        💰 Step 3<br><b>Settlement</b>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
 # --- CONCEPT EXPLAINER ---
 with st.expander("📖 Logic Overview & Concepts"):
     col_a, col_b = st.columns(2)
@@ -63,8 +80,8 @@ with st.expander("📖 Logic Overview & Concepts"):
 """)
 
 # --- TABS ---
-tab1, tab2, tab3 = st.tabs(
-    ["📊 Costs & Route", "👥 Attendance", "💰 Final Settlement"])
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["📊 Costs & Route", "👥 Attendance", "💰 Final Settlement", "📘 Guide"])
 
 # =========================
 # TAB 1: COST INPUT
@@ -124,7 +141,7 @@ with tab2:
 
     player_input = st.text_area(
         "Enter Player Names (one per line)",
-        "Karthika\nDisha\nShree\nYash\nAbhvadya",
+        "Karthika\nDisha\nShree\nYash\nAbhivadya",
         key="player_name_input"
     )
     player_names = [p.strip() for p in player_input.split("\n") if p.strip()]
@@ -375,6 +392,246 @@ with tab3:
                 block_info.append({"Block": b_id, "Route": " → ".join(
                     cities), "Union Size": len(block_unions[b_id])})
             st.table(pd.DataFrame(block_info))
+
+
+st.markdown("""
+# 📘 User Guide
+
+---
+
+## 🧭 Navigation (Start Here)
+
+This app has **4 tabs at the top**:
+
+👉 📊 Costs & Route  
+👉 👥 Attendance  
+👉 💰 Final Settlement  
+👉 📘 Guide  
+
+⚠️ Always use them **left → right**
+
+---
+
+# 🔵 TAB 1: Costs & Route
+
+This is where you define the **trip structure**
+
+---
+
+## 🧾 How to Fill This Section
+
+### 🔢 Number of Cities
+- Use the input box to select how many cities
+- The app will automatically create input fields
+
+👉 Example:
+- 3 → Delhi, Dehradun, Raipur
+
+---
+
+### 🏙️ City Name
+- You can edit names directly
+- Click inside the box and type
+
+---
+
+### 💰 Cost Fields
+
+For each city:
+
+- **Outbound (Base → City)**  
+  Cost to reach the city  
+
+- **Return (City → Base)**  
+  Cost to return  
+
+- **Transit (City → City)**  
+  Cost from previous city  
+
+---
+
+### ⚠️ Important Rule
+
+- If **Transit = 0** → same block  
+- If **Transit > 0** → new block  
+
+---
+
+## ⚙️ Strategy Selection
+
+Choose how extra cost (loss) is shared:
+
+- **Current Participants**
+  → Shared by all players  
+
+- **Traveling Players Alone (Bridgers)**
+  → Only players continuing travel pay  
+
+---
+
+👉 After filling, go to **👥 Attendance tab**
+
+---
+
+# 🟢 TAB 2: Attendance
+
+This is where you define **who traveled where**
+
+---
+
+## 👥 How to Add Players
+
+- Type player names in the text box  
+- One name per line  
+
+👉 Example:
+Karthika  
+Yash  
+Shree  
+
+---
+
+## ❌ How to Remove Players
+
+- Delete the name from the list  
+- The table will automatically update  
+
+---
+
+## ➕ How to Add More Players
+
+- Just add a new line in the text box  
+- Table updates automatically  
+
+---
+
+## ✅ How to Mark Attendance
+
+- Use the table (checkbox grid)
+- Tick the cities each player attended  
+
+---
+
+## 📊 What You See
+
+### 📍 Travel Map
+- ✅ = attended  
+- — = not attended  
+
+---
+
+### 🧭 Player Journey Map
+- 🟢 = present  
+- ⚪ = absent  
+- ➡️ = movement  
+
+👉 Helps visualize travel flow  
+
+---
+
+### 🔗 Bridging Players
+- Players who travel across cities  
+- Important for loss calculation  
+
+---
+
+## ⚠️ Validation Rules
+
+- Every city must have **at least one player**
+- Every player should have **at least one city**
+
+---
+
+👉 After filling, go to **💰 Final Settlement**
+
+---
+
+# 🔴 TAB 3: Final Settlement
+
+---
+
+## ▶️ How to Generate Results
+
+Click:
+
+👉 **🚀 Generate Settlement Report**
+
+---
+
+## 📊 What You Get
+
+### Summary
+- Total Collected  
+- Actual Cost  
+- Difference  
+
+---
+
+### ✅ Balance Check
+- ✔️ Perfect → all good  
+- ⚠️ Mismatch → check inputs  
+
+---
+
+### 📋 Billing Breakdown
+- Final amount per player  
+
+---
+
+### 💡 Insights
+- Highest payer  
+- Lowest payer  
+
+---
+
+### ⚖️ Savings & Loss Log
+- 🟢 Saving  
+- 🔴 Loss  
+
+---
+
+### 🧱 Block Structure
+- Shows grouping of cities  
+
+---
+
+## 📥 Download
+
+- Click **Download Excel**
+- Save or share results  
+
+---
+
+# 📘 TAB 4: Guide
+
+You are here 🙂
+
+---
+
+# 🔁 Quick Flow
+
+1. Enter cities & costs  
+2. Add players & mark attendance  
+3. Generate settlement  
+
+---
+
+# 🚨 Common Mistakes
+
+- Leaving a city with no players  
+- Forgetting to mark attendance  
+- Entering wrong transit values  
+
+---
+
+# 💡 Tips
+
+- Use Journey Map to verify player paths  
+- Check Bridging Players before finalizing  
+- Ensure Difference = ₹0  
+- Download Excel for records  
+
+""")
 
 # --- FOOTER ---
 st.markdown("---")
