@@ -104,74 +104,56 @@ with tab2:
         "Karthika\nDisha\nShree\nYash\nAbhvadya",
         key="player_name_input"
     )
-
     player_names = [p.strip() for p in player_input.split("\n") if p.strip()]
 
     if not player_names:
         st.warning("⚠️ Enter player names to continue")
         st.stop()
 
-    if len(set(player_names)) != len(player_names):
-        st.error("Duplicate player names detected")
-        st.stop()
+    # --- THE SYNC ENGINE (FIXED) ---
+    # We only modify the dataframe if the 'Structure' (names/columns) actually changed.
 
-    # --- INITIALIZE ONCE ---
+    # 1. Initialize session state if missing
     if "attendance" not in st.session_state:
         st.session_state["attendance"] = pd.DataFrame(
-            False, index=player_names, columns=city_names
+            False, index=player_names, columns=city_names)
+        st.session_state["last_player_list"] = player_names
+        st.session_state["last_city_list"] = city_names
+
+    # 2. Check if we need to Sync (Only if names/cities were added or removed)
+    structure_changed = (player_names != st.session_state.get("last_player_list") or
+                         city_names != st.session_state.get("last_city_list"))
+
+    if structure_changed:
+        # Use reindex to safely add/remove rows and columns without wiping existing checkmarks
+        st.session_state["attendance"] = st.session_state["attendance"].reindex(
+            index=player_names, columns=city_names, fill_value=False
         )
-
-    df = st.session_state["attendance"]
-
-    # --- STRUCTURE SYNC (SAFE) ---
-    # Add missing rows
-    for p in player_names:
-        if p not in df.index:
-            df.loc[p] = False
-
-    # Remove old players
-    for p in list(df.index):
-        if p not in player_names:
-            df.drop(p, inplace=True)
-
-    # Add missing columns
-    for c in city_names:
-        if c not in df.columns:
-            df[c] = False
-
-    # Remove old columns
-    for c in list(df.columns):
-        if c not in city_names:
-            df.drop(columns=c, inplace=True)
-
-    # Ensure correct order
-    df = df.loc[player_names, city_names]
-
-    # IMPORTANT: assign back ONLY once
-    st.session_state["attendance"] = df
+        # Update metadata trackers
+        st.session_state["last_player_list"] = player_names
+        st.session_state["last_city_list"] = city_names
 
     st.write("Check the boxes for the cities each player attended:")
 
-    # --- DATA EDITOR (STABLE) ---
+    # 3. THE DATA EDITOR (STABLE)
+    # We pass the session state dataframe DIRECTLY.
+    # Because we aren't re-assigning it above unless a name changed, the click will 'stick'.
     edited_attendance = st.data_editor(
-        df,
+        st.session_state["attendance"],
         use_container_width=True,
-        key="attendance_editor"
+        key="stable_attendance_editor"  # Keep this key permanent
     )
 
-    # Save edited result
+    # 4. Save the checkmarks back to session state for Tab 3
     st.session_state["attendance"] = edited_attendance
 
-    # --- FINAL ORDER FIX ---
+    # --- VISUALS ---
+    # Ensure correct order for the map and calculations
     final_attendance = edited_attendance[city_names]
 
     st.subheader("📍 Travel Map")
-
-    visual_df = final_attendance.astype(str).replace({
-        "True": "✅",
-        "False": "—"
-    })
-
+    visual_df = final_attendance.astype(
+        str).replace({"True": "✅", "False": "—"})
     st.dataframe(visual_df, use_container_width=True)
 
 
