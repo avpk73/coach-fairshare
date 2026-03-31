@@ -114,9 +114,24 @@ with tab2:
         st.stop()
 
     # --- SESSION STATE (FIX) ---
+    '''
     if "attendance" not in st.session_state:
         st.session_state["attendance"] = pd.DataFrame(
             False, index=player_names, columns=city_names)
+    '''
+    if "attendance" not in st.session_state:
+        st.session_state["attendance"] = pd.DataFrame(
+            False, index=player_names, columns=city_names)
+    else:
+        existing = st.session_state["attendance"]
+
+        # Only rebuild if structure changed
+        if list(existing.index) != player_names or list(existing.columns) != city_names:
+            st.session_state["attendance"] = existing.reindex(
+                index=player_names,
+                columns=city_names,
+                fill_value=False
+            )
 
     # Rebuild if structure changes
     st.session_state["attendance"] = st.session_state["attendance"].reindex(
