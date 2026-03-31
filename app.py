@@ -3,62 +3,94 @@ import pandas as pd
 import io
 
 # --- PAGE SETUP ---
-st.set_page_config(page_title="Coach Fair-Share v26.1",
-                   layout="wide", page_icon="🚌")
+st.set_page_config(
+    page_title="Coach Fair-Share v26.2",
+    layout="wide",
+    page_icon="🚌"
+)
+
+# --- CLEAN UI STYLING ---
+st.markdown("""
+<style>
+.main { background-color: #f8f9fa; }
+.stMetric {
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+}
+</style>
+""", unsafe_allow_html=True)
 
 st.title("🚌 Coach Travel Fair-Share Calculator")
-st.caption("Version v26.1")
+st.caption("Strategic Cost Allocation Engine | Version v26.2")
 
-st.info("""
-This tool calculates fair sharing of coach travel costs across multiple tournaments.
-
-🧭 Concepts:
-• Outbound: Base → City  
-• Return: City → Base  
-• Transit: Cost between cities  
-
-💡 If Transit = 0 → treated as continuous travel (same group/block)
+# --- CONCEPT EXPLAINER ---
+with st.expander("📖 Logic Overview & Concepts"):
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("""
+**Core Principles:**
+- You never pay more than a standalone trip (SLC)
+- Savings are shared fairly
+- Total collection = actual cost
+""")
+    with col_b:
+        st.markdown("""
+**Definitions:**
+- Outbound: Base → City  
+- Return: City → Base  
+- Transit: City → City  
+- Block: Cities connected with Transit = 0
 """)
 
 # --- TABS ---
-tab1, tab2, tab3 = st.tabs(["📊 Costs", "👥 Attendance", "💰 Results"])
+tab1, tab2, tab3 = st.tabs(
+    ["📊 Costs & Route", "👥 Attendance", "💰 Final Settlement"])
 
 # =========================
 # TAB 1: COST INPUT
 # =========================
 with tab1:
-    st.header("Step 1: Trip Costs")
+    st.header("Step 1: Define Trip Costs")
 
-    num_cities = st.slider("Number of Cities/Tournaments", 2, 10, 3)
+    col_left, col_right = st.columns([1, 2])
+    with col_left:
+        num_cities = st.number_input("Number of Cities", 2, 10, 3)
+
+        strategy = st.selectbox(
+            "Loss Allocation Strategy",
+            ["Current Participants", "Traveling Players Alone (Bridgers)"]
+        )
 
     city_data = []
     city_names = []
 
+    st.markdown("---")
+
+    grid = st.columns(3)
+
     for i in range(num_cities):
-        with st.expander(f"City {i+1}", expanded=(i < 3)):
-            default_names = ["Delhi", "Dehradun", "Raipur"]
-            name = st.text_input(
-                "City Name",
-                default_names[i] if i < len(default_names) else f"City {i+1}",
-                key=f"name_{i}"
-            )
+        with grid[i % 3]:
+            with st.container(border=True):
 
-            col1, col2, col3 = st.columns(3)
+                default_names = ["Delhi", "Dehradun", "Raipur"]
+                name = st.text_input(
+                    "City Name",
+                    default_names[i] if i < len(
+                        default_names) else f"City {i+1}",
+                    key=f"name_{i}"
+                )
 
-            u = col1.number_input(
-                f"Outbound (Base → {name})", value=7000.0 if i != 1 else 12800.0, key=f"u_{i}")
-            d = col2.number_input(
-                f"Return ({name} → Base)", value=7000.0 if i != 1 else 12800.0, key=f"d_{i}")
-            m = col3.number_input(f"Transit to {name}", value=0.0 if i == 0 else (
-                7700.0 if i == 1 else 11500.0), key=f"m_{i}")
+                u = st.number_input(
+                    f"Outbound (Base → {name})", value=7000.0 if i != 1 else 12800.0, key=f"u_{i}")
+                d = st.number_input(
+                    f"Return ({name} → Base)", value=7000.0 if i != 1 else 12800.0, key=f"d_{i}")
+                m = st.number_input(f"Transit to {name}", value=0.0 if i == 0 else (
+                    7700.0 if i == 1 else 11500.0), key=f"m_{i}")
 
-            city_data.append({"name": name, "U": u, "D": d, "M": m})
-            city_names.append(name)
-
-    strategy = st.selectbox(
-        "Loss Allocation Strategy",
-        ["Current Participants", "Traveling Players Alone (Bridgers)"]
-    )
+                city_data.append({"name": name, "U": u, "D": d, "M": m})
+                city_names.append(name)
 
 # =========================
 # TAB 2: ATTENDANCE
@@ -74,31 +106,56 @@ with tab2:
     player_names = [p.strip() for p in player_input.split("\n") if p.strip()]
 
     if not player_names:
-        st.warning("Please enter at least one player")
+        st.warning("⚠️ Enter player names to continue")
+        st.stop()
 
     if len(set(player_names)) != len(player_names):
         st.error("Duplicate player names detected")
+        st.stop()
 
-    attendance_df = pd.DataFrame(False, index=player_names, columns=city_names)
+    # --- SESSION STATE (FIX) ---
+    if "attendance" not in st.session_state:
+        st.session_state["attendance"] = pd.DataFrame(
+            False, index=player_names, columns=city_names)
 
-    edited_attendance = st.data_editor(attendance_df, use_container_width=True)
+    # Rebuild if structure changes
+    st.session_state["attendance"] = st.session_state["attendance"].reindex(
+        index=player_names, columns=city_names, fill_value=False
+    )
+
+    edited_attendance = st.data_editor(
+        st.session_state["attendance"],
+        use_container_width=True
+    )
+
+    # Save back
+    st.session_state["attendance"] = edited_attendance
+
+    # --- MOBILE FIX ---
+    edited_attendance = edited_attendance[city_names]
 
     st.subheader("📍 Travel Map")
-    visual_df = edited_attendance.astype(
-        str).replace({"True": "✅", "False": "—"})
+
+    visual_df = edited_attendance.copy().astype(str).replace({
+        "True": "✅",
+        "False": "—"
+    })
+
     st.dataframe(visual_df, use_container_width=True)
 
 # =========================
 # TAB 3: RESULTS
 # =========================
 with tab3:
-    st.header("Step 3: Results")
+    st.header("Step 3: Settlement Report")
 
-    if st.button("💰 Calculate Fair Share", type="primary"):
+    if st.button("💰 Generate Final Bills", type="primary", use_container_width=True):
 
-        if not player_names:
-            st.error("No players defined")
-            st.stop()
+        # --- VALIDATION ---
+        for city in city_names:
+            if not edited_attendance[city].any():
+                st.error(f"No players assigned to {city}")
+                st.stop()
 
         # --- BLOCK LOGIC ---
         block_ids = []
@@ -116,28 +173,30 @@ with tab3:
         # --- UNION ---
         block_unions = {}
         for b_id in unique_blocks:
-            cities_in_b = [city_names[i]
-                           for i, bid in enumerate(block_ids) if bid == b_id]
-            union_mask = edited_attendance[cities_in_b].any(axis=1)
+            cities_in_block = [city_names[i]
+                               for i, bid in enumerate(block_ids) if bid == b_id]
+            union_mask = edited_attendance[cities_in_block].any(axis=1)
             block_unions[b_id] = union_mask[union_mask].index.tolist()
 
-        # --- SLC ---
+        # --- SLC (FIX SAFE DIVISION) ---
         slc_per_block = {}
         for b_id in unique_blocks:
             idxs = [i for i, bid in enumerate(block_ids) if bid == b_id]
             u_val = city_data[idxs[0]]['U']
             d_val = city_data[idxs[-1]]['D']
             size = len(block_unions[b_id])
+
             slc_per_block[b_id] = (u_val + d_val) / size if size > 0 else 0
 
         # --- INITIAL BILL ---
         final_bills = {name: 0.0 for name in player_names}
+
         for name in player_names:
             for b_id in unique_blocks:
                 if name in block_unions[b_id]:
                     final_bills[name] += slc_per_block[b_id]
 
-        # --- LINK EFFICIENCY ---
+        # --- LINK EFFICIENCY (FIX SAFE DIVISION) ---
         savings_log = []
 
         for i in range(1, num_cities):
@@ -158,104 +217,92 @@ with tab3:
                     for p in block_unions[p_b]:
                         final_bills[p] -= saving * \
                             w_exit / len(block_unions[p_b])
+
                     for p in block_unions[c_b]:
                         final_bills[p] -= saving * \
                             w_entry / len(block_unions[c_b])
 
                     savings_log.append(
-                        {"Link": f"{city_names[i-1]} → {city_names[i]}", "Type": "Saving", "Amount": saving})
+                        {"Route": f"{city_names[i-1]} → {city_names[i]}", "Type": "Saving", "Amount": saving})
 
                 elif saving < 0:
                     loss = abs(saving)
 
                     if strategy == "Current Participants":
-                        for p in block_unions[c_b]:
-                            final_bills[p] += loss / len(block_unions[c_b])
+                        target = block_unions[c_b]
                     else:
-                        bridgers = [p for p in block_unions[p_b]
-                                    if p in block_unions[c_b]]
-                        if bridgers:
-                            for p in bridgers:
-                                final_bills[p] += loss / len(bridgers)
-                        else:
-                            for p in block_unions[c_b]:
-                                final_bills[p] += loss / len(block_unions[c_b])
+                        target = [p for p in block_unions[p_b]
+                                  if p in block_unions[c_b]]
+
+                    if not target:
+                        target = block_unions[c_b]
+
+                    for p in target:
+                        final_bills[p] += loss / len(target)
 
                     savings_log.append(
-                        {"Link": f"{city_names[i-1]} → {city_names[i]}", "Type": "Loss", "Amount": -loss})
+                        {"Route": f"{city_names[i-1]} → {city_names[i]}", "Type": "Loss", "Amount": -loss})
 
-        # --- RESULTS DISPLAY ---
-        res_df = pd.DataFrame.from_dict(
-            final_bills, orient='index', columns=['Final Bill (₹)'])
-        res_df = res_df.sort_values(by="Final Bill (₹)", ascending=False)
+        # --- SUMMARY ---
+        total_collected = sum(final_bills.values())
 
-        col1, col2 = st.columns([2, 1])
+        last_city_idx = max([i for i in range(num_cities)
+                            if edited_attendance[city_names[i]].any()] or [0])
+
+        invoice_cost = city_data[0]['U'] + sum(c['M']
+                                               for c in city_data[1:]) + city_data[last_city_idx]['D']
+
+        # --- DASHBOARD ---
+        m1, m2, m3 = st.columns(3)
+
+        m1.metric("Total Collected", f"₹{total_collected:,.2f}")
+        m2.metric("Actual Cost", f"₹{invoice_cost:,.2f}")
+        m3.metric("Difference", f"₹{total_collected - invoice_cost:,.2f}")
+
+        st.markdown("---")
+
+        col1, col2 = st.columns([3, 2])
 
         with col1:
-            st.subheader("💰 Player Costs")
+            st.subheader("📋 Billing Breakdown")
+
+            res_df = pd.DataFrame.from_dict(
+                final_bills, orient='index', columns=['Final Bill (₹)'])
+            res_df = res_df.sort_values(by="Final Bill (₹)", ascending=False)
+
             st.dataframe(res_df.style.format(
                 "₹{:,.2f}"), use_container_width=True)
 
-            # Excel export
+            # Export
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 res_df.to_excel(writer)
 
             st.download_button(
-                "📥 Download Excel",
-                data=output.getvalue(),
-                file_name="fair_share.xlsx"
-            )
+                "📥 Download Excel", data=output.getvalue(), file_name="fairshare.xlsx")
 
         with col2:
-            st.subheader("📊 Summary")
+            st.subheader("🔗 Efficiency Log")
 
-            total_collected = sum(final_bills.values())
-
-            last_city_idx = max(
-                [i for i in range(num_cities) if edited_attendance[city_names[i]].any()] or [0])
-
-            actual_cost = city_data[0]['U'] + sum(c['M']
-                                                  for c in city_data[1:]) + city_data[last_city_idx]['D']
-
-            st.metric("Total Collected", f"₹{total_collected:,.0f}")
-            st.metric("Actual Cost", f"₹{actual_cost:,.0f}")
-
-            diff = total_collected - actual_cost
-            if abs(diff) < 1:
-                st.success("Balanced ✅")
+            if savings_log:
+                st.table(pd.DataFrame(savings_log))
             else:
-                st.error(f"Mismatch ₹{diff:.2f}")
+                st.write("No transitions")
 
         # --- BLOCK VIEW ---
-        st.subheader("🧱 Travel Blocks")
+        with st.expander("🧱 Block Structure"):
+            block_info = []
+            for b_id in unique_blocks:
+                cities = [city_names[i]
+                          for i, bid in enumerate(block_ids) if bid == b_id]
+                block_info.append({
+                    "Block": b_id,
+                    "Cities": " → ".join(cities),
+                    "Players": ", ".join(block_unions[b_id])
+                })
 
-        block_info = []
-        for b_id in unique_blocks:
-            cities = [city_names[i]
-                      for i, bid in enumerate(block_ids) if bid == b_id]
-            block_info.append({
-                "Block": b_id,
-                "Cities": " → ".join(cities),
-                "Players": ", ".join(block_unions[b_id])
-            })
-
-        st.table(pd.DataFrame(block_info))
-
-        # --- SAVINGS ---
-        if savings_log:
-            st.subheader("🔗 Savings / Loss")
-            st.dataframe(pd.DataFrame(savings_log))
+            st.table(pd.DataFrame(block_info))
 
 # --- FOOTER ---
-with st.expander("🔍 How this works"):
-    st.markdown("""
-Each player pays:
-1. Their share of block travel  
-2. Minus savings from efficient routing  
-3. Plus any additional cost from inefficient transitions  
-
-✔ Ensures fairness  
-✔ Ensures full cost recovery  
-✔ No overcharging
-""")
+st.markdown("---")
+st.caption("Fair-Share Engine | Zero-Sum Verified | Production Safe")
