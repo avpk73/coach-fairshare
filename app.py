@@ -110,45 +110,50 @@ with tab2:
         st.warning("⚠️ Enter player names to continue")
         st.stop()
 
-    # --- 1. INITIALIZE MASTER DATA ---
-    # We create a 'template' dataframe in session state if it doesn't exist
+    # --- 1. INITIALIZE MASTER DATAFRAME ---
+    # This only runs once when the app starts
     if "master_df" not in st.session_state:
         st.session_state["master_df"] = pd.DataFrame(
             False, index=player_names, columns=city_names)
 
-    # --- 2. SYNC STRUCTURE (Only when names or cities change) ---
-    # We compare current lists to the existing dataframe's index/columns
+    # --- 2. SYNC STRUCTURE ONLY ON CHANGE ---
+    # We compare current input to existing structure.
+    # If they match, we do NOTHING. This prevents the double-click bug.
     existing_players = list(st.session_state["master_df"].index)
     existing_cities = list(st.session_state["master_df"].columns)
 
     if player_names != existing_players or city_names != existing_cities:
-        # Structure changed, so we reindex
+        # Only reindex if names or cities actually changed
         st.session_state["master_df"] = st.session_state["master_df"].reindex(
             index=player_names, columns=city_names, fill_value=False
         )
 
     st.write("Check the boxes for the cities each player attended:")
 
-    # --- 3. THE DATA EDITOR (CRITICAL FIX) ---
-    # We use 'master_df' as the seed, but 'attendance_editor' as the KEY.
-    # We DO NOT assign this to a variable (no 'edited_attendance = ...')
-    st.data_editor(
+    # --- 3. THE DATA EDITOR ---
+    # We use the return value 'final_attendance' for all calculations.
+    # We do NOT save it back to st.session_state["master_df"] manually.
+    final_attendance = st.data_editor(
         st.session_state["master_df"],
         use_container_width=True,
-        key="attendance_editor"  # This key now OWN the edited data
+        key="attendance_editor"
     )
 
-    # --- 4. DATA RETRIEVAL ---
-    # Whenever we need the data (for the map or the math in Tab 3),
-    # we pull it directly from the editor's state.
-    final_attendance = st.session_state["attendance_editor"]
-
+    # --- 4. MAP & MATH READY ---
+    # 'final_attendance' is a full DataFrame here, so this won't crash.
     st.subheader("📍 Travel Map")
-    visual_df = final_attendance[city_names].astype(str).replace({
+
+    # We filter columns to ensure trip order is preserved (Delhi -> Dehradun -> Raipur)
+    ordered_attendance = final_attendance[city_names]
+
+    visual_df = ordered_attendance.astype(str).replace({
         "True": "✅",
         "False": "—"
     })
     st.dataframe(visual_df, use_container_width=True)
+
+    # IMPORTANT: We save this to session state so Tab 3 can use it for math
+    st.session_state["ready_attendance"] = ordered_attendance
 
 
 # =========================
