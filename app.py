@@ -92,6 +92,7 @@ with tab1:
                 city_data.append({"name": name, "U": u, "D": d, "M": m})
                 city_names.append(name)
 
+
 # =========================
 # TAB 2: ATTENDANCE
 # =========================
@@ -101,7 +102,7 @@ with tab2:
     player_input = st.text_area(
         "Enter Player Names (one per line)",
         "Karthika\nDisha\nShree\nYash\nAbhvadya",
-        key="player_name_input"  # Persistent key for text area
+        key="player_name_input"
     )
 
     player_names = [p.strip() for p in player_input.split("\n") if p.strip()]
@@ -114,41 +115,65 @@ with tab2:
         st.error("Duplicate player names detected")
         st.stop()
 
-    # --- SESSION STATE ENGINE ---
-    # 1. Initialize if it doesn't exist
+    # --- INITIALIZE ONCE ---
     if "attendance" not in st.session_state:
         st.session_state["attendance"] = pd.DataFrame(
-            False, index=player_names, columns=city_names)
+            False, index=player_names, columns=city_names
+        )
 
-    # 2. Sync Structure: If players or cities change in Tab 1, reindex without losing data
-    # We do this every rerun to ensure the table is always ready
-    st.session_state["attendance"] = st.session_state["attendance"].reindex(
-        index=player_names, columns=city_names, fill_value=False
-    )
+    df = st.session_state["attendance"]
+
+    # --- STRUCTURE SYNC (SAFE) ---
+    # Add missing rows
+    for p in player_names:
+        if p not in df.index:
+            df.loc[p] = False
+
+    # Remove old players
+    for p in list(df.index):
+        if p not in player_names:
+            df.drop(p, inplace=True)
+
+    # Add missing columns
+    for c in city_names:
+        if c not in df.columns:
+            df[c] = False
+
+    # Remove old columns
+    for c in list(df.columns):
+        if c not in city_names:
+            df.drop(columns=c, inplace=True)
+
+    # Ensure correct order
+    df = df.loc[player_names, city_names]
+
+    # IMPORTANT: assign back ONLY once
+    st.session_state["attendance"] = df
 
     st.write("Check the boxes for the cities each player attended:")
 
-    # 3. THE FIX: Assign a 'key' and use session_state directly
-    # The 'key' is what prevents the double-click/flicker bug.
+    # --- DATA EDITOR (STABLE) ---
     edited_attendance = st.data_editor(
-        st.session_state["attendance"],
+        df,
         use_container_width=True,
-        key="main_attendance_editor"  # <--- THIS IS THE CRITICAL LINE
+        key="attendance_editor"
     )
 
-    # 4. Save the results back to session state so Tab 3 can see them
+    # Save edited result
     st.session_state["attendance"] = edited_attendance
 
-    # --- MOBILE & MATH FIX ---
-    # Ensure that even if the user clicked headers to sort, the math uses the trip order
+    # --- FINAL ORDER FIX ---
     final_attendance = edited_attendance[city_names]
 
     st.subheader("📍 Travel Map")
-    visual_df = final_attendance.copy().astype(str).replace({
+
+    visual_df = final_attendance.astype(str).replace({
         "True": "✅",
         "False": "—"
     })
+
     st.dataframe(visual_df, use_container_width=True)
+
 
 # =========================
 # TAB 3: RESULTS
