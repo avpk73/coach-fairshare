@@ -171,11 +171,21 @@ with tab2:
     )
 
     new_cols = []
+    arrow_count = 1
+
     for i, city in enumerate(city_names):
         new_cols.append(f"🏙️ {city}")
         if i < len(city_names) - 1:
-            new_cols.append("→")
+            new_cols.append(f"→{arrow_count}")
+            arrow_count += 1
 
+    journey_display.columns = new_cols
+
+    # OPTIONAL: Clean display (hide numbering visually)
+    journey_display.columns = [
+        col if not col.startswith("→") else "→"
+        for col in journey_display.columns
+    ]
     journey_display.columns = new_cols
     st.dataframe(journey_display, use_container_width=True)
 
