@@ -4,7 +4,7 @@ import io
 
 # --- PAGE SETUP ---
 st.set_page_config(
-    page_title="Coach Fair-Share v26.5",
+    page_title="Coach Fair-Share v26.2",
     layout="wide",
     page_icon="🚌"
 )
@@ -23,7 +23,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🚌 Coach Travel Fair-Share Calculator")
-st.caption("Strategic Cost Allocation Engine | Version v26.5 Stable")
+st.caption("Strategic Cost Allocation Engine | Version v26.2")
 
 # --- CONCEPT EXPLAINER ---
 with st.expander("📖 Logic Overview & Concepts"):
@@ -32,15 +32,16 @@ with st.expander("📖 Logic Overview & Concepts"):
         st.markdown("""
 **Core Principles:**
 - You never pay more than a standalone trip (SLC)
-- Savings are shared fairly between exiters and joiners
-- Total collection = actual coach provider invoice
+- Savings are shared fairly
+- Total collection = actual cost
 """)
     with col_b:
         st.markdown("""
 **Definitions:**
-- Outbound: Base → City | Return: City → Base
-- Transit: City → City cost
-- Block: Cities connected with ₹0 Transit (treated as one stay)
+- Outbound: Base → City  
+- Return: City → Base  
+- Transit: City → City  
+- Block: Cities connected with Transit = 0
 """)
 
 # --- TABS ---
@@ -56,6 +57,7 @@ with tab1:
     col_left, col_right = st.columns([1, 2])
     with col_left:
         num_cities = st.number_input("Number of Cities", 2, 10, 3)
+
         strategy = st.selectbox(
             "Loss Allocation Strategy",
             ["Current Participants", "Traveling Players Alone (Bridgers)"]
@@ -107,46 +109,39 @@ with tab2:
         st.warning("⚠️ Enter player names to continue")
         st.stop()
 
-    # --- SESSION STATE (The Fix for Quick Actions) ---
+    # --- INITIALIZE SESSION STATE ---
     if "master_df" not in st.session_state:
         st.session_state["master_df"] = pd.DataFrame(
             False, index=player_names, columns=city_names)
 
     # Sync structure if cities or players changed in Step 1
-    if list(st.session_state["master_df"].index) != player_names or list(st.session_state["master_df"].columns) != city_names:
+    existing_players = list(st.session_state["master_df"].index)
+    existing_cities = list(st.session_state["master_df"].columns)
+
+    if player_names != existing_players or city_names != existing_cities:
         st.session_state["master_df"] = st.session_state["master_df"].reindex(
             index=player_names, columns=city_names, fill_value=False
         )
 
-    # --- QUICK ACTION BUTTONS ---
-    c1, c2, _ = st.columns([1, 1, 2])
-    with c1:
-        if st.button("✅ Select All (City 1)", use_container_width=True):
-            st.session_state["master_df"][city_names[0]] = True
-            st.rerun()
-    with c2:
-        if st.button("🗑️ Clear All", use_container_width=True):
-            st.session_state["master_df"][:] = False
-            st.rerun()
+    st.write("Check the boxes for the cities each player attended:")
 
-    st.write("Check the boxes for the tournaments each player attended:")
-
-    # Data Editor - Using a stable key to prevent the double-click bug
+    # Data Editor
     final_attendance = st.data_editor(
         st.session_state["master_df"],
         use_container_width=True,
-        key="attendance_editor_stable"
+        key="attendance_editor"
     )
 
-    # Sync back to master without triggering a rerun immediately
-    st.session_state["master_df"] = final_attendance
+    # Filter columns to ensure trip order is preserved
     ordered_attendance = final_attendance[city_names]
-    st.session_state["ready_attendance"] = ordered_attendance
 
     st.subheader("📍 Travel Map")
-    # Clean map visualization
-    visual_df = ordered_attendance.map(lambda x: "✅" if x else "—")
+    visual_df = ordered_attendance.astype(
+        str).replace({"True": "✅", "False": "—"})
     st.dataframe(visual_df, use_container_width=True)
+
+    # IMPORTANT: Save this to session state so Tab 3 can access it
+    st.session_state["ready_attendance"] = ordered_attendance
 
 
 # =========================
@@ -155,10 +150,12 @@ with tab2:
 with tab3:
     st.header("Step 3: Settlement Report")
 
+    # Safety check: Ensure Tab 2 was visited
     if "ready_attendance" not in st.session_state:
         st.info("👋 Go to the **Attendance** tab to select players first.")
         st.stop()
 
+    # Define local variable for Tab 3 from session state
     attendance_data = st.session_state["ready_attendance"]
 
     if st.button("💰 Generate Final Bills", type="primary", use_container_width=True):
@@ -167,7 +164,7 @@ with tab3:
         for city in city_names:
             if not attendance_data[city].any():
                 st.error(
-                    f"No players assigned to {city}. Trip cannot be calculated.")
+                    f"No players assigned to {city}. A coach trip requires at least one passenger.")
                 st.stop()
 
         # --- BLOCK LOGIC ---
@@ -221,11 +218,11 @@ with tab3:
 
                 if saving > 0:
                     for p in block_unions[p_b]:
-                        final_bills[p] -= (saving * w_exit /
-                                           len(block_unions[p_b]))
+                        final_bills[p] -= saving * \
+                            w_exit / len(block_unions[p_b])
                     for p in block_unions[c_b]:
-                        final_bills[p] -= (saving * w_entry /
-                                           len(block_unions[c_b]))
+                        final_bills[p] -= saving * \
+                            w_entry / len(block_unions[c_b])
                     savings_log.append(
                         {"Route": f"{city_names[i-1]} → {city_names[i]}", "Type": "Saving", "Amount": saving})
                 elif saving < 0:
@@ -235,7 +232,7 @@ with tab3:
                     target = bridgers if (
                         strategy != "Current Participants" and bridgers) else block_unions[c_b]
                     for p in target:
-                        final_bills[p] += (loss / len(target))
+                        final_bills[p] += loss / len(target)
                     savings_log.append(
                         {"Route": f"{city_names[i-1]} → {city_names[i]}", "Type": "Loss", "Amount": -loss})
 
@@ -259,8 +256,8 @@ with tab3:
             st.subheader("📋 Billing Breakdown")
             res_df = pd.DataFrame.from_dict(final_bills, orient='index', columns=[
                                             'Final Bill (₹)']).sort_values(by="Final Bill (₹)", ascending=False)
-            st.dataframe(res_df.style.format("₹{:,.2f}").background_gradient(
-                cmap="Blues", axis=0), use_container_width=True)
+            st.dataframe(res_df.style.format(
+                "₹{:,.2f}"), use_container_width=True)
 
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -286,4 +283,4 @@ with tab3:
 
 # --- FOOTER ---
 st.markdown("---")
-st.caption("Fair-Share Engine | Zero-Sum Integrity Verified | v26.5 Stable")
+st.caption("Fair-Share Engine | Zero-Sum Verified | v26.2 Stable")
