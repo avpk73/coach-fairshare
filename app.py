@@ -13,11 +13,29 @@ st.set_page_config(
 st.markdown("""
 <style>
 .main { background-color: #f8f9fa; }
+
+/* Metric Card */
 .stMetric {
     background-color: #ffffff;
     padding: 15px;
     border-radius: 10px;
     border: 1px solid #e0e0e0;
+}
+
+/* Metric LABEL (e.g., Total Collected) */
+.stMetric label {
+    color: #333333 !important;
+    font-weight: 600;
+}
+
+/* Metric VALUE (₹ amount) */
+.stMetric div[data-testid="stMetricValue"] {
+    color: #000000 !important;
+}
+
+/* Metric DELTA (difference) */
+.stMetric div[data-testid="stMetricDelta"] {
+    color: #444444 !important;
 }
 </style>
 """, unsafe_allow_html=True)
