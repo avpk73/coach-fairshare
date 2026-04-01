@@ -1,13 +1,7 @@
-# coach_engine.py
 import pandas as pd
 
 
 class CoachFairShareEngine:
-    """
-    Mathematical Logic for Coach Fair-Share.
-    This file can be used by Streamlit, a Mobile App API, or an Excel Processor.
-    """
-
     def __init__(self, city_data, player_names, attendance_df, strategy):
         self.city_data = city_data
         self.city_names = [c['name'] for c in city_data]
@@ -39,8 +33,8 @@ class CoachFairShareEngine:
         slc_per_block = {}
         for b_id in unique_blocks:
             idxs = [i for i, bid in enumerate(block_ids) if bid == b_id]
-            u_val = self.city_data[idxs[0]]['U']
-            d_val = self.city_data[idxs[-1]]['D']
+            u_val, d_val = self.city_data[idxs[0]
+                                          ]['U'], self.city_data[idxs[-1]]['D']
             size = len(block_unions[b_id])
             slc_per_block[b_id] = (u_val + d_val) / size if size > 0 else 0
 
@@ -60,8 +54,8 @@ class CoachFairShareEngine:
                                                           1]['D'], self.city_data[i]['U'], self.city_data[i]['M']
                 saving = (d_prev + u_curr) - m_actual
                 denom = d_prev + u_curr
-                w_exit = d_prev / denom if denom > 0 else 0.5
-                w_entry = u_curr / denom if denom > 0 else 0.5
+                w_exit, w_entry = (d_prev/denom, u_curr /
+                                   denom) if denom > 0 else (0.5, 0.5)
 
                 if saving > 0:
                     for p in block_unions[p_b]:
