@@ -130,11 +130,8 @@ with tab2:
 
     # --- JOURNEY MAP ---
     st.subheader("🧭 Player Journey Map")
-
-    journey_df = st.session_state["ready_attendance"].astype(str).replace({
-        "True": "🟢",
-        "False": "⚪"
-    })
+    journey_df = st.session_state["ready_attendance"].astype(
+        str).replace({"True": "🟢", "False": "⚪"})
 
     def build_row(row):
         journey = []
@@ -145,24 +142,26 @@ with tab2:
         return journey
 
     journey_display = pd.DataFrame(
-        [build_row(journey_df.loc[p]) for p in journey_df.index],
-        index=journey_df.index
-    )
+        [build_row(journey_df.loc[p]) for p in journey_df.index], index=journey_df.index)
 
-    # ✅ Clean column names (NO hacks, NO duplicates issues now)
+    # ✅ FIXED: Make column names unique to prevent KeyError in Styler
     new_cols = []
+    arrow_count = 0
     for i, city in enumerate(city_names):
         new_cols.append(f"🏙️ {city}")
         if i < len(city_names) - 1:
-            new_cols.append("➡️")
-
+            # We add invisible spaces to make each arrow unique for Pandas
+            new_cols.append("➡️" + (" " * arrow_count))
+            arrow_count += 1
     journey_display.columns = new_cols
 
-    # ✅ Stable rendering (NO .style)
-    st.dataframe(journey_display, use_container_width=True)
+    # ✅ STYLE FIX
+    styled_df = journey_display.style.set_properties(**{'text-align': 'center'})\
+        .set_table_styles([{'selector': 'th', 'props': [('text-align', 'center'), ('font-weight', '600')]}])
+
+    st.dataframe(styled_df, use_container_width=True)
 
     # --- BRIDGERS ---
-
     def is_bridger(row):
         return any(row.iloc[i] and row.iloc[i+1] for i in range(len(row)-1))
     bridger_list = st.session_state["ready_attendance"].index[st.session_state["ready_attendance"].apply(
@@ -180,19 +179,16 @@ with tab3:
         st.stop()
 
     if st.button("🚀 Generate Settlement Report", type="primary", use_container_width=True):
-        # CALL THE EXTERNAL ENGINE
         engine = CoachFairShareEngine(
             city_data, player_names, st.session_state["ready_attendance"], strategy)
         res = engine.calculate_settlement()
 
-        # METRICS
         m1, m2, m3 = st.columns(3)
         m1.metric("Total Collected", f"₹{res['total_collected']:,.2f}")
         m2.metric("Actual Cost", f"₹{res['invoice_cost']:,.2f}")
         m3.metric("Difference",
                   f"₹{res['total_collected'] - res['invoice_cost']:.2f}")
 
-        # BREAKDOWN
         col1, col2 = st.columns([3, 2])
         with col1:
             st.subheader("📋 Billing Breakdown")
@@ -200,7 +196,6 @@ with tab3:
                                             'Final Bill (₹)']).sort_values(by="Final Bill (₹)", ascending=False)
             st.dataframe(res_df.style.format(
                 "₹{:,.2f}"), use_container_width=True)
-
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 res_df.to_excel(writer, sheet_name='FairShare_Report')
@@ -216,7 +211,7 @@ with tab3:
                 st.dataframe(log_df, use_container_width=True)
 
 # =========================
-# TAB 4: FULL GUIDE RESTORED
+# TAB 4: GUIDE
 # =========================
 with tab4:
     st.markdown("""
@@ -232,24 +227,13 @@ with tab4:
     - **Return (City → Base)**: Cost to return  
     - **Transit (City → City)**: Cost from previous city  
 
-    ### ⚠️ Important Block Rule
-    - If **Transit = 0** → Cities are grouped in the same **Block**.
-    - If **Transit > 0** → A new **Block** starts.
-
     # 🟢 TAB 2: Attendance
     - Type player names (one per line).
     - Check the boxes for the cities each player attended.
-    - **Journey Map**: Visualizes the flow of movement.
-    - **Bridgers**: Identified as players who continue travel across cities.
 
     # 🔴 TAB 3: Final Settlement
     - Click **Generate Settlement Report**.
     - **Zero-Sum Verified**: Ensures the "Difference" is ₹0.
-    - **Download Excel**: Get a record for your group accounts.
-
-    # 🚨 Common Mistakes
-    - Leaving a city with no players (the bus can't travel empty!).
-    - Entering wrong transit values (remember: 0 means the coach stayed put).
     """)
 
 # --- FOOTER ---
