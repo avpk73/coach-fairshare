@@ -130,8 +130,11 @@ with tab2:
 
     # --- JOURNEY MAP ---
     st.subheader("🧭 Player Journey Map")
-    journey_df = st.session_state["ready_attendance"].astype(
-        str).replace({"True": "🟢", "False": "⚪"})
+
+    journey_df = st.session_state["ready_attendance"].astype(str).replace({
+        "True": "🟢",
+        "False": "⚪"
+    })
 
     def build_row(row):
         journey = []
@@ -142,8 +145,28 @@ with tab2:
         return journey
 
     journey_display = pd.DataFrame(
-        [build_row(journey_df.loc[p]) for p in journey_df.index], index=journey_df.index)
-    st.dataframe(journey_display, use_container_width=True)
+        [build_row(journey_df.loc[p]) for p in journey_df.index],
+        index=journey_df.index
+    )
+
+    # ✅ Proper column names
+    new_cols = []
+    for i, city in enumerate(city_names):
+        new_cols.append(f"🏙️ {city}")
+        if i < len(city_names) - 1:
+            new_cols.append("➡️")
+
+    journey_display.columns = new_cols
+
+    # ✅ STYLE FIX (this is what you’re missing)
+    styled_df = journey_display.style.set_properties(**{
+        'text-align': 'center'
+    }).set_table_styles([
+        {'selector': 'th', 'props': [
+            ('text-align', 'center'), ('font-weight', '600')]}
+    ])
+
+    st.dataframe(styled_df, use_container_width=True)
 
     # --- BRIDGERS ---
     def is_bridger(row):
