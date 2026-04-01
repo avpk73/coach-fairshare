@@ -149,7 +149,7 @@ with tab2:
         index=journey_df.index
     )
 
-    # ✅ Proper column names
+    # ✅ Clean column names (NO hacks, NO duplicates issues now)
     new_cols = []
     for i, city in enumerate(city_names):
         new_cols.append(f"🏙️ {city}")
@@ -158,17 +158,11 @@ with tab2:
 
     journey_display.columns = new_cols
 
-    # ✅ STYLE FIX (this is what you’re missing)
-    styled_df = journey_display.style.set_properties(**{
-        'text-align': 'center'
-    }).set_table_styles([
-        {'selector': 'th', 'props': [
-            ('text-align', 'center'), ('font-weight', '600')]}
-    ])
-
-    st.dataframe(styled_df, use_container_width=True)
+    # ✅ Stable rendering (NO .style)
+    st.dataframe(journey_display, use_container_width=True)
 
     # --- BRIDGERS ---
+
     def is_bridger(row):
         return any(row.iloc[i] and row.iloc[i+1] for i in range(len(row)-1))
     bridger_list = st.session_state["ready_attendance"].index[st.session_state["ready_attendance"].apply(
