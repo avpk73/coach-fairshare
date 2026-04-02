@@ -92,7 +92,7 @@ with tab2:
     st.subheader("📍 Travel Map")
     st.dataframe(st.session_state["ready_attendance"].replace(
         {True: "✅", False: "—"}), use_container_width=True)
-
+'''
     # RESTORED: Journey Map with Centered Formatting
     st.subheader("🧭 Player Journey Map")
     journey_df = st.session_state["ready_attendance"].replace(
@@ -128,7 +128,7 @@ with tab2:
         is_bridger, axis=1)].tolist()
     if bridgers:
         st.success(f"🔗 Bridging Players: {', '.join(bridgers)}")
-
+'''
 # =========================
 # TAB 3: RESULTS
 # =========================
